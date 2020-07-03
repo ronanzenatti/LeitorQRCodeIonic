@@ -1,6 +1,10 @@
-import { Component } from '@angular/core';
+import { HistoricoService } from './../servicos/historico.service';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner/ngx';
+import { ScreenOrientation } from '@ionic-native/screen-orientation/ngx';
 import { AlertController, Platform } from '@ionic/angular';
+
+import { Historico } from '../model/Historico';
 
 @Component({
   selector: 'app-tab1',
@@ -11,44 +15,83 @@ export class Tab1Page {
 
   public scanner: any;
 
-  public body: HTMLElement;
+  public content: HTMLElement;
   public img: HTMLElement;
+  public footer: HTMLElement;
 
-  constructor(private qrScanner: QRScanner, public alertController: AlertController, public platform: Platform) {
+  public resultado: string;
+  public link = false;
+
+  constructor(
+    private qrScanner: QRScanner,
+    private screenOrientation: ScreenOrientation,
+    public alertController: AlertController,
+    public platform: Platform,
+    public historicoService: HistoricoService,
+    private cdRef: ChangeDetectorRef
+  ) {
     this.platform.backButton.subscribeWithPriority(0, () => {
 
-      this.body.style.opacity = "1";
-      this.img.style.opacity = "1";
+      this.content.style.opacity = '1';
+      this.img.style.opacity = '1';
+      this.footer.style.opacity = '1';
+
+      this.resultado = null;
+      this.link = false;
 
       this.qrScanner.hide(); // hide camera preview
       this.scanner.unsubscribe(); // stop scanning
     });
+
+    // set to portrait
+    this.screenOrientation.lock(this.screenOrientation.ORIENTATIONS.PORTRAIT);
   }
 
-  public lerQRCode() {
+  public async lerQRCode() {
 
-    this.body = document.getElementsByTagName("ion-content")[0] as HTMLElement;
+    this.content = document.getElementsByTagName('ion-content')[0] as HTMLElement;
 
     this.img = document.getElementById('logo') as HTMLElement;
+    this.footer = document.getElementById('footer') as HTMLElement;
 
     this.qrScanner.prepare()
       .then((status: QRScannerStatus) => {
         if (status.authorized) {
           // camera permission was granted
-          this.body.style.opacity = "0";
-          this.img.style.opacity = "0";
+          this.content.style.opacity = '0';
+          this.img.style.opacity = '0';
+          this.footer.style.opacity = '0';
+
           // start scanning
           this.qrScanner.show();
-          this.scanner = this.qrScanner.scan().subscribe((text: string) => {
+          this.scanner = this.qrScanner.scan().subscribe(async (text: string) => {
             console.log('Scanned something', text);
 
-            this.presentAlert(text);
+            this.resultado = (text['result']) ? text['result'] : text;
 
-            this.body.style.opacity = "1";
-            this.img.style.opacity = "1";
+            this.content.style.opacity = '1';
+            this.img.style.opacity = '1';
+            this.footer.style.opacity = '1';
 
             this.qrScanner.hide(); // hide camera preview
             this.scanner.unsubscribe(); // stop scanning
+
+            this.verificaLink(this.resultado);
+            this.cdRef.detectChanges();
+
+            // this.presentAlert('Resultado:', this.resultado);
+
+            const historico = new Historico();
+
+            historico.leitura = this.resultado;
+            historico.dataHora = new Date();
+
+            await this.historicoService.create(historico).then(resposta => {
+              console.log(resposta);
+            }).catch(error => {
+              console.log('ERRO: ', error);
+              this.presentAlert('ERRO!!!', 'Erro ao salvar no Firebase...');
+            });
           });
 
         } else if (status.denied) {
@@ -63,15 +106,25 @@ export class Tab1Page {
 
   }
 
-  async presentAlert(text) {
+  async presentAlert(title, text) {
     const alert = await this.alertController.create({
       header: 'Leitor de QRCode',
-      subHeader: 'Resultado:',
+      subHeader: title,
       message: text,
       buttons: ['OK']
     });
 
     await alert.present();
+  }
+
+  public verificaLink(texto: string) {
+    const inicio = texto.substring(0, 4);
+    console.log(inicio);
+    if (inicio == 'www.' || inicio == 'http') {
+      this.link = true;
+    } else {
+      this.link = false;
+    }
   }
 
 }

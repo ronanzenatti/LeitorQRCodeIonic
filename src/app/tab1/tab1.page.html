@@ -1,4 +1,4 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar color="dark">
     <ion-title>
       Scanner
@@ -6,9 +6,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" color="medium" class="ion-justify-content-center">
-
-
+<ion-content [fullscreen]="true" color="medium">
 </ion-content>
 
 <div class="screen">
@@ -17,7 +15,18 @@
   </div>
 </div>
 
-<ion-footer class="ion-no-border">
+<ion-footer class="ion-no-border" id="footer">
+  <ion-item *ngIf="link">
+    <ion-label>
+      <div>
+        <a [href]="resultado" target="_blank">{{resultado}}</a>
+      </div>
+    </ion-label>
+  </ion-item>
+  <ion-item *ngIf="resultado">
+    <ion-label position="floating">Resultado:</ion-label>
+    <ion-input [(ngModel)]="resultado"></ion-input>
+  </ion-item>
   <ion-toolbar color="dark">
     <ion-button expand="block" (click)="lerQRCode()"> ESCANEAR </ion-button>
   </ion-toolbar>
