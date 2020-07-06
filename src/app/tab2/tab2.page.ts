@@ -25,7 +25,7 @@ export class Tab2Page {
   public buscarHistoricos() {
     this.historicos = [];
 
-    this.historicoService.getList().subscribe(dados => {
+    this.historicoService.getListPorData().subscribe(dados => {
       this.historicos = dados.map(registro => {
         return {
           $key: registro.payload.doc.id,

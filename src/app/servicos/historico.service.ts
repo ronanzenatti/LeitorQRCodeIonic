@@ -21,8 +21,13 @@ export class HistoricoService {
   }*/
 
   // Get List
-  getList() {
+  getListPorData() {
     return this.firestore.collection('historicos', ref => ref.orderBy('dataHora', 'desc')).snapshotChanges();
+  }
+
+  // Get List
+  getList() {
+    return this.firestore.collection('historicos').snapshotChanges();
   }
 
   // Update
